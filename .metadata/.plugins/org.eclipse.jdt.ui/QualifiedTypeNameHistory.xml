@@ -1,2 +1,16 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<qualifiedTypeNameHistroy/>
+<qualifiedTypeNameHistroy>
+    <fullyQualifiedTypeName name="NonStatic.NonStaticMembersDemo"/>
+    <fullyQualifiedTypeName name="NonStatic.ObjectReferenceDemo"/>
+    <fullyQualifiedTypeName name="com.demiglace.inheritance.SingleInheritance"/>
+    <fullyQualifiedTypeName name="com.demiglace.moreinheritanceconcepts.SuperClass"/>
+    <fullyQualifiedTypeName name="CompileTime.CompileTimeBinding"/>
+    <fullyQualifiedTypeName name="Runtime.MacbookPro"/>
+    <fullyQualifiedTypeName name="Runtime.MacbookAir"/>
+    <fullyQualifiedTypeName name="Runtime.Macbook"/>
+    <fullyQualifiedTypeName name="Runtime.AppleLaptop"/>
+    <fullyQualifiedTypeName name="java.lang.ArithmeticException"/>
+    <fullyQualifiedTypeName name="com.sun.java_cup.internal.runtime.Scanner"/>
+    <fullyQualifiedTypeName name="java.util.Scanner"/>
+    <fullyQualifiedTypeName name="java.lang.StringIndexOutOfBoundsException"/>
+</qualifiedTypeNameHistroy>
