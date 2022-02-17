@@ -45,6 +45,8 @@
       - [Collections and Arrays](#collections-and-arrays)
       - [Generics](#generics)
   - [Enums](#enums)
+  - [Concurrent Collections](#concurrent-collections)
+      - [Blocking Queue](#blocking-queue)
 
 ## Introduction to Java
 
@@ -1928,6 +1930,137 @@ public enum PaymentType {
 
 	public int getFee() {
 		return this.fee;
+	}
+}
+```
+
+## Concurrent Collections
+
+Concurrent Collections allows concurrent access to collections for multiple threads. We can have parallel access without worrying about blocking and synchronization. The problem with traditional list is when we try to add or remove in the list while inside a loop, the ConcurrentModificationException exception will be thrown.
+
+```java
+public class ArrayListProblem {
+	public static void main(String[] args) {
+		List<String> courses = new CopyOnWriteArrayList<String>();
+		courses.add("Java");
+		courses.add("Python");
+		courses.add("Nodejs");
+		courses.add("React");
+
+		Iterator<String> iterator = courses.iterator();
+		while(iterator.hasNext()) {
+			String course = iterator.next();
+			System.out.println(course);
+			if (course.equals("Nodejs")) {
+				courses.remove(course);
+			}
+		}
+		System.out.println(courses);
+	}
+}
+```
+
+This can be solved using by **CopyOnWriteArrayList** instead of ArrayList. CopyOnWriteArrayList creates a new list wherein the modifications will be done. At some point, the copy will be merged with the original list. This is great to use if there are a lot of reads and few writes. This class is also useful for multithreading. The above code has been modified to make use of multithreading. In this case, there will be two threads manipulating the same list.
+
+```java
+public class ArrayListProblem extends Thread {
+	static List<String> courses = new CopyOnWriteArrayList<String>();
+
+	@Override
+	public void run() {
+		try {
+			Thread.sleep(3000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		courses.add("Kubernetes");
+	}
+
+	public static void main(String[] args) throws InterruptedException {
+		ArrayListProblem arrayListProblem = new ArrayListProblem();
+		arrayListProblem.start();
+
+		courses.add("Java");
+		courses.add("Python");
+		courses.add("Nodejs");
+		courses.add("React");
+
+		Iterator<String> iterator = courses.iterator();
+		while(iterator.hasNext()) {
+			Thread.sleep(3000);
+			String course = iterator.next();
+			System.out.println(course);
+
+		}
+		System.out.println(courses);
+	}
+}
+```
+
+```
+Java
+Python
+Nodejs
+React
+[Java, Python, Nodejs, React, Kubernetes]
+```
+
+#### Blocking Queue
+
+Blocking queue is very useful for implementing the producer-consumer pattern. This is where there is a producer and work which is put into a queue and taken by the consumer. The blocking queue automatically blocks the producer if it is full or if the consumer has not yet finished its work. If there is no work to be done yet, the consumer will be blocked.
+
+We begin with creating the producer and consumer and then write out the test after. In this example, the producer thread will put 4 strings to the queue, while the consumer is ready to read from the queue simultaneously. The blocking happens internally depending on the capacity and consumption.
+
+```java
+public class OrderProducer implements Runnable {
+	private BlockingQueue<String> queue;
+
+	public OrderProducer(BlockingQueue<String> queue) {
+		this.queue = queue;
+	}
+
+	@Override
+	public void run() {
+		try {
+			queue.put("Doge");
+			queue.put("Cat");
+			queue.put("Fishe");
+			queue.put("Monke");
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+	}
+}
+
+public class OrderConsumer implements Runnable {
+	private BlockingQueue<String> queue;
+
+	public OrderConsumer(BlockingQueue<String> queue) {
+		this.queue = queue;
+	}
+
+	@Override
+	public void run() {
+		try {
+			System.out.println(queue.take());
+			System.out.println(queue.take());
+			System.out.println(queue.take());
+			System.out.println(queue.take());
+			System.out.println(queue.take());
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+	}
+}
+
+public class BlockingQueueTest {
+	public static void main(String[] args) {
+		BlockingQueue<String> queue = new ArrayBlockingQueue<String>(1024);
+		OrderProducer orderProducer = new OrderProducer(queue);
+		OrderConsumer orderConsumer = new OrderConsumer(queue);
+
+		new Thread(orderProducer).start();
+		new Thread(orderConsumer).start();
 	}
 }
 ```
