@@ -26,6 +26,25 @@
   - [Executor Framework](#executor-framework)
       - [Callable](#callable)
   - [Garbage Collection](#garbage-collection)
+  - [Inner Classes](#inner-classes)
+  - [String Handling](#string-handling)
+  - [IO Streams](#io-streams)
+      - [Binary Data](#binary-data)
+      - [Character Data](#character-data)
+      - [Serialization](#serialization)
+  - [Arrays](#arrays)
+  - [Equals and Hashcode](#equals-and-hashcode)
+  - [Collections](#collections)
+      - [ArrayList](#arraylist)
+      - [LinkedList](#linkedlist)
+      - [HashSet](#hashset)
+      - [Iterator](#iterator)
+      - [Comparable and Comparator](#comparable-and-comparator)
+      - [HashMap](#hashmap)
+      - [PriorityQueue](#priorityqueue)
+      - [Collections and Arrays](#collections-and-arrays)
+      - [Generics](#generics)
+  - [Enums](#enums)
 
 ## Introduction to Java
 
@@ -1050,6 +1069,865 @@ public class GCDemo {
 	@Override
 	protected void finalize() {
 		System.out.println("finalized " + objId);
+	}
+}
+```
+
+## Inner Classes
+
+To invoke a static Inner class static method, we use Outer.Inner.method(). To invoke an Inner class non static method, we need to create an instance of the inner class.
+
+```java
+public class Outer {
+	static void f1() {
+		System.out.println("Outers static method");
+	}
+
+	static class Inner {
+		// static inner class method
+		static void f2() {
+			System.out.println("Inners static method");
+		}
+		// non static inner class method
+		void f3() {
+			System.out.println("inners non static method");
+		}
+	}
+
+	public static void main(String[] args) {
+		Outer.f1();
+		Outer.Inner.f2();
+		Outer.Inner inner = new Outer.Inner();
+		inner.f3();
+	}
+}
+```
+
+We can also use non static inner classes. To create a non static inner class object is to use an instance of the parent class then the **parent.new** operator. We cannot define a non static method inside a non static inner class because we cannot have static inside a non static area. To access the static variable of the outer class, we simply need to call Outer.x. For the non static variable, we need to use Outer.this.y.
+
+```java
+public class Outer {
+	private static int x = 5;
+	private int y;
+
+	Outer(int y) {
+		this.y = y;
+	}
+
+	void f1() {
+		System.out.println("Outer class non static method");
+	}
+
+	class Inner {
+		private int y;
+
+		Inner(int y) {
+			this.y=y;
+		}
+
+		void f2() {
+			System.out.println("Inside inner class non static method");
+			System.out.println("Outer class X " + Outer.x);
+			System.out.println("Outer class Y " + Outer.this.y);
+			System.out.println("Inner class Y"  + this.y);
+
+		}
+	}
+
+	public static void main(String[] args) {
+		Outer outer = new Outer(80);
+		outer.f1();
+		Outer.Inner inner = outer.new Inner(80);
+		inner.f2();
+
+		System.out.println(inner.y);
+	}
+}
+```
+
+```
+Outer class non static method
+Inside inner class non static method
+Outer class X 5
+Outer class Y 80
+Inner class Y80
+80
+```
+
+A local inner class is a class that is created inside a block, method or constructor. This class can only be accessed from within that block/method/constructor.
+
+```java
+public class Outer {
+
+	void f1() {
+		System.out.println("Inside Outer f1");
+
+		class LocalInner {
+			void f2() {
+				System.out.println("Inside Local Inner f2");
+			}
+		}
+
+		LocalInner inner = new LocalInner();
+		inner.f2();
+	}
+
+	public static void main(String[] args) {
+		Outer outer = new Outer();
+		outer.f1();
+	}
+}
+```
+
+```
+Inside Outer f1
+Inside Local Inner f2
+```
+
+Anonymous inner classes are defined inside a method. Using anonymous inner classes, we can implement interfaces with its original interface identity. For example, if an interface is Connection, we can use the same name Connection when we implement the inner class. We cannot define a constructor since an anonoymous inner class does not have a class name of its own. In this example, we created a static method getConnection() wherein which we created an anonymous inner class which implemented our custom Connection interface.
+
+```java
+public class DriverManager {
+	static Connection getConnection() {
+		Connection con = new Connection() {
+			@Override
+			public void createStatemenet() {
+				System.out.println("Inside anonymous inner class method");
+			}
+		};
+		return con;
+	}
+}
+
+public class Test {
+	public static void main(String[] args) {
+		Connection con = DriverManager.getConnection();
+		con.createStatemenet();
+	}
+}
+```
+
+## String Handling
+
+Compared to String, StringBuffer is mutable and synchronized.
+
+```java
+public class StringBufferDemo {
+	public static void main(String[] args) {
+		StringBuffer sb = new StringBuffer();
+		System.out.println(sb.capacity());
+
+		sb.append("Doge doge doge");
+		sb.append("cate cate cate");
+
+		System.out.println(sb);
+		System.out.println(sb.capacity());
+	}
+}
+```
+
+```
+16
+Doge doge dogecate cate cate
+34
+```
+
+## IO Streams
+
+A stream is a logical handle from which we can read data or write data to. Java supports ByteStreams, CharacterStreams, BufferedStreams, ObjectStreams which are all from java.io. **ByteStreams** read and write one byte at a time. **CharacterStreams** uses unicode so it reads one character at a time (2 bytes). **BufferedStreams** are wrappers for ByteStreams and CharacterStreams allowing us to read more data. **ObjectStreams** allow us to read and write objects through a process called Serialization.
+
+#### Binary Data
+
+We can read files using **FileInputStream** from java.io which returns reads one byte at a time and returns an int. This will return -1 once it reaches the end of the file. We loop through the file and typecast the integer into char.
+
+```java
+public class FileInputStreamDemo {
+	public static void main(String[] args) {
+		FileInputStream fis = null;
+		try {
+			fis = new FileInputStream(new File(
+					"C:\\Users\\ChristianCruz\\Documents\\Christian\\projects\\Core-Java-Made-Easy\\IO\\file.txt"));
+			System.out.println("File opened");
+			int i;
+			while ( (i=fis.read())!=-1 ) {
+				System.out.print((char) i);
+			}
+
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				fis.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			System.out.println("\nFile closed");
+		}
+	}
+}
+```
+
+Using FileOutputStream, we can write a new file. In this case, the image will be written into a new file called `newfroge.jpg`
+
+```java
+public class FileOutputStreamDemo {
+	public static void main(String[] args) {
+		FileInputStream fis = null;
+		FileOutputStream fos = null;
+
+		try {
+			fis = new FileInputStream(
+					"C:\\Users\\ChristianCruz\\Documents\\Christian\\projects\\Core-Java-Made-Easy\\IO\\froge.jpg");
+			fos = new FileOutputStream(
+					"C:\\Users\\ChristianCruz\\Documents\\Christian\\projects\\Core-Java-Made-Easy\\IO\\newfroge.jpg");
+			int data;
+			while ((data = fis.read()) != -1) {
+				fos.write(data);
+			}
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				fis.close();
+				fos.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+}
+```
+
+#### Character Data
+
+For character or text data, we can use FileReader and FileWriter.
+
+```java
+public class ReaderAndWriter {
+	public static void main(String[] args) throws IOException {
+		FileReader fr = null;
+		FileWriter fw = null;
+
+		fr = new FileReader(
+				"C:\\Users\\ChristianCruz\\Documents\\Christian\\projects\\Core-Java-Made-Easy\\IO\\file.txt");
+		fw = new FileWriter(
+				"C:\\Users\\ChristianCruz\\Documents\\Christian\\projects\\Core-Java-Made-Easy\\IO\\newfile.txt");
+
+		int ch;
+		while ((ch = fr.read()) != -1) {
+			fw.write(ch);
+		}
+
+		fr.close();
+		fw.close();
+	}
+}
+```
+
+The StringTokenizer class from java.util allows us to break a string into multiple tokens. We can pass in a string and a delimiter to the method. There is also an option to pass only a string, which in this case will use the default delimiters such as space, new line etc.
+
+```java
+public class StringTokenizerDemo {
+	public static void main(String[] args) {
+		String s = "Serialize,Yourself,Close,The,World,Open,The,Next.";
+
+		StringTokenizer st = new StringTokenizer(s, ",");
+
+		while(st.hasMoreTokens()) {
+			System.out.println(st.nextToken());
+		}
+	}
+}
+```
+
+```
+Serialize
+Yourself
+Close
+The
+World
+Open
+The
+Next.
+```
+
+We can use BufferedReader class, which is a decorator of FileReader to count number of words. We also used try resource block here, where we instantiate our FileReader and BufferedReader inside the try clause. This allows us to skip writing the finally block for closing.
+
+```java
+public class BufferedReaderDemo {
+	public static void main(String[] args) {
+		int count = 0;
+		try (FileReader fr = new FileReader(
+				"C:\\Users\\ChristianCruz\\Documents\\Christian\\projects\\Core-Java-Made-Easy\\IO\\file.txt");
+				BufferedReader br = new BufferedReader(fr);) {
+
+			String line;
+
+			while ((line = br.readLine()) != null) {
+				StringTokenizer st = new StringTokenizer(line);
+				while (st.hasMoreTokens()) {
+					System.out.println(st.nextToken());
+					count++;
+				}
+			}
+			System.out.println("Number of words: " + count);
+
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+}
+```
+
+#### Serialization
+
+Serialization is the process of writing an object to a stream. This can be a file stream or a network stream. For an object to be serialized, it must implement the **Serializable** marker interface. This interface doesn't have any methods to implement. If we don't want a property to be serialized, we can mark it with the **transient** keyword. We use ObjectOutputStream to write an object to a stream (Serialization) and ObjectInputStream to read an object back (Deserialization). We use Serialization and Deserialization in JMS.
+
+```java
+public class Employee implements Serializable{
+	int id;
+	String name;
+	double salary;
+	transient int ssn;
+}
+```
+
+To serialize an object to a file, we use **ObjectOutputStream**. In this case, we will generate a file `Emp.ser`. To read an object, we use **ObjectInputStream**. This won't return the ssn since we marked it as transient.
+
+```java
+public class SerializationDemo {
+	public static void main(String[] args) {
+		FileOutputStream fos;
+		ObjectOutputStream oos;
+
+		try {
+			fos = new FileOutputStream("C:\\Users\\ChristianCruz\\Documents\\Christian\\projects\\Core-Java-Made-Easy\\IO\\Emp.ser");
+			oos = new ObjectOutputStream(fos);
+
+			Employee emp = new Employee(1, "Doge", 10000, 12345);
+			oos.writeObject(emp);
+			System.out.println("Employee object has been serialized");
+
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+}
+
+public class DeserializaitonDemo {
+	public static void main(String[] args) throws IOException, ClassNotFoundException {
+			FileInputStream fis = new FileInputStream("C:\\Users\\ChristianCruz\\Documents\\Christian\\projects\\Core-Java-Made-Easy\\IO\\Emp.ser");
+			ObjectInputStream ois = new ObjectInputStream(fis);
+
+			Object object = ois.readObject();
+			Employee emp = (Employee) object;
+
+			System.out.println("Employee id: " + emp.id);
+			System.out.println("Employee name: " + emp.name);
+			System.out.println("Employee salary: " + emp.salary);
+			System.out.println("Employee ssn: " + emp.ssn);
+	}
+}
+
+```
+
+## Arrays
+
+Arrays are group of elements with similar types. Arrays are also static in that when memory is allocated at runtime, it cannot be changed. Collections however can be changed. We can also make two dimensional arrays.
+
+```java
+public class TwoDimensionalDemo {
+	public static void main(String[] args) {
+		int[][] matrix = {{1,2,3}, {4,5,6}, {7,8,9}};
+		System.out.println(matrix[1][2]);
+		System.out.println("---");
+
+		//column
+		for(int i=0; i<3 ; i++) {
+			//row
+			for (int j=0;j<3; j++) {
+				System.out.print(matrix[i][j]);
+			}
+			System.out.println();
+		}
+	}
+}
+```
+
+```
+6
+---
+123
+456
+789
+```
+
+## Equals and Hashcode
+
+The javadocs from oracle defines the following hashcode contracts:
+
+> For given two objects:
+> if equals returns true then hashcode value must be the same
+> if equals returns false then the hashcode value may or may not be the same
+> if hashcode is same equals may or may not return true
+
+## Collections
+
+The Collections framework provides us with interfaces, classes and methods to store objects. Unlike arrays, Collections size is dynamic. The Collection interface is the key parent interface that is implemented by List, Set and Queue. **List** allows duplicate objects, while **Set** does not, and **Queue** is FIFO. ArrayList and LinkedList are implementations of List, HashSet and SortedSet implements Set, and PriorityQueue and LinkedList implements Queue.
+
+When we need to store information as key-value pairs, we can use **Map** which is implemented by HashMap, Hashtable and SortedMap.
+
+#### ArrayList
+
+ArrayList uses an array to store the objects. This results to fast access however, insertion and deletion is slow because the entire array is reshuffled. ArrayList can be useful for read-heavy applications. We can use runtime polymorphism to use the List interface which implements ArrayList. We can add a list to another list using the **addAll()** method. We can pass an index to this to specify where we want to insert the new list to be inserted. To search if a list contains an object, we can use the **contains()** method.
+
+```java
+public class ArrayListDemo {
+	public static void main(String[] args) {
+		List<Integer> list = new ArrayList<Integer>();
+
+		for (int i=10; i<=100; i=i+10) {
+			list.add(i);
+		}
+
+		list.add(2, 100);
+		list.set(3, 200);
+
+		System.out.println("List: " + list);
+
+		List<Integer> secondList = new ArrayList<Integer>();
+		secondList.add(111);
+		secondList.add(222);
+		secondList.add(333);
+
+		System.out.println("secondList: " + secondList);
+
+		list.addAll(4, secondList);
+		System.out.println("list + secondList" + list);
+
+		if (list.contains(222)) {
+			System.out.println("list contains 222");
+		}
+
+		for (int i=0; i<list.size() ; i++) {
+			System.out.println(list.get(i));
+		}
+
+		list.remove(3);
+	}
+}
+```
+
+#### LinkedList
+
+The LinkedList is an ordered collection that stores elements in the form of nodes. Each node has three fields: one stores the actual object, one points to the previous node and the last points to the next node. Each node knows about the previous and next node which results in fast insertion and deletion. The disadvantage for this is it takes more memory and slower random access.
+
+```java
+public class LinkedListDemo {
+	public static void main(String[] args) {
+		Object objects[] = new Object[1000000];
+		for (int i = 0; i < objects.length; i++) {
+			objects[i] = new Object();
+		}
+
+		List<Object> list = new LinkedList<Object>();
+		long start = System.currentTimeMillis();
+		for (Object object : objects) {
+			list.add(object);
+		}
+		long end = System.currentTimeMillis();
+
+		System.out.println("time taken: " + (end - start));
+	}
+}
+```
+
+#### HashSet
+
+A set is a collection where duplicates are not allowed. It is implemented by HashSet. In this case, when we initialize a set from a list with duplicate values, the duplicated values will be dropped. LinkedHashSet retains the order of the objects added to the set. TreeSet orders the objects into ascending order. In the case of strings, they will be alphabetically ordered. StringBuffer does not implement the comparable interface, so it will throw an error.
+
+```java
+public class HashSetDemo {
+	public static void main(String[] args) {
+		Random obj = new Random();
+
+		List<Integer> list = new ArrayList<Integer>();
+
+		for (int i=1;i<=10; i++) {
+			int number = obj.nextInt(5);
+			list.add(number);
+		}
+		System.out.println(list);
+
+		Set<Integer> set = new HashSet<Integer>(list);
+		System.out.println(set);
+	}
+}
+```
+
+#### Iterator
+
+We can use the Iterator class to iterate through elements of a collection.
+
+```java
+public class ArrayListDemo {
+	public static void main(String[] args) {
+		List<Integer> list = new ArrayList<Integer>();
+
+		list.add(20);
+		list.add(100);
+		list.add(220);
+
+		Iterator<Integer> itr = list.iterator();
+
+		while(itr.hasNext()) {
+			System.out.println(itr.next());
+		}
+	}
+}
+```
+
+We can also use ListIterator to traverse a list forwards and backwards
+
+```java
+public class ListIteratorDemo {
+	public static void main(String[] args) {
+		List<String> list = new LinkedList<>();
+		list.add("abc");
+		list.add("def");
+		list.add("xyz");
+
+		ListIterator<String> itr = list.listIterator();
+
+		System.out.println("forward");
+		while(itr.hasNext()) {
+			System.out.println(itr.next());
+		}
+		System.out.println("backward");
+		while(itr.hasPrevious()) {
+			System.out.println(itr.previous());
+		}
+	}
+}
+```
+
+#### Comparable and Comparator
+
+We can provide a natural ordering by overriding the compareTo method of the Comparable interface. A negative value should be returned if obj1 is to come before obj2 and a positive should be returned if obj1 is after obj2, and zero if obj1 and obj2 are the same. If we want to change the sorting order later on, we use the Comparator interface with the compare() method. StringBuffer does not implement the Comparable interface out of the box. With this, we can pass this comparator to the argument of our TreeSet constructor.
+
+```java
+public class StringBufferComparator implements Comparator<StringBuffer> {
+	@Override
+	public int compare(StringBuffer o1, StringBuffer o2) {
+		String s1 = o1.toString();
+		String s2 = o2.toString();
+
+		return s1.compareTo(s2);
+	}
+}
+```
+
+We can also compare objects by overriding both compareTo (compare by employee id) and creating a custom comparator (compare by name).
+
+```java
+public class Employee implements Comparable<Employee> {
+	int id;
+	String name;
+
+	public Employee(int id, String name) {
+		this.id = id;
+		this.name = name;
+	}
+
+	@Override
+	public int compareTo(Employee o) {
+		int id1 = this.id;
+		int id2 = o.id;
+
+		if (id1<id2) {
+			return -1;
+		} else if (id1>id2) {
+			return 1;
+		} else {
+			return 0;
+		}
+	}
+}
+
+public class EmployeeNameComparator implements Comparator<Employee> {
+	@Override
+	public int compare(Employee o1, Employee o2) {
+		String s1 = o1.name;
+		String s2 = o2.name;
+
+		return s1.compareTo(s2);
+	}
+}
+
+public class EmployeeTest {
+	public static void main(String[] args) {
+		//Set<Employee> set = new TreeSet<Employee>();
+		Set<Employee> set = new TreeSet<Employee>(new EmployeeNameComparator());
+		set.add(new Employee(200, "doge"));
+		set.add(new Employee(290, "cate"));
+		set.add(new Employee(301, "fishe"));
+		set.add(new Employee(100, "monke"));
+
+		for (Employee employee : set) {
+			System.out.println(employee.id + employee.name);
+		}
+	}
+}
+```
+
+#### HashMap
+
+We should use the Map interface when we want to represent a group of objects as key value pairs. The Map interface is an interface of its own does not implement the Collections interface. To get a map entry, we can use the keySet() method to return all keys and values() to return values. LinkedHashMap will preserve ordering of entries.
+
+```java
+public class HashMapDemo {
+	public static void main(String[] args) {
+		Map<String, Integer> map = new HashMap<>();
+
+		map.put("Doge", 70);
+		map.put("Cate", 60);
+		map.put("Fishe", 50);
+		map.put("Monke", 100);
+
+		Set<String> keySet = map.keySet();
+		System.out.println("Keys: " + keySet);
+
+		Collection<Integer> values = map.values();
+		System.out.println("Values: " + values);
+
+		for (String key : keySet) {
+			System.out.println("Key: " + key + " Value: " + map.get(key));
+		}
+	}
+}
+```
+
+It is important to note that HashMap uses `.equals()` method and not `==` to check if two keys are the same. With IdentityHashMap, we can have the same values.
+
+```java
+public class IdentityHashMapDemo {
+	public static void main(String[] args) {
+		Map<Integer, String> map = new IdentityHashMap<>();
+
+		Integer id1 = new Integer(10);
+		Integer id2 = new Integer(10);
+
+		map.put(id1, "Doge");
+		map.put(id2, "Cate");
+
+		System.out.println(map);
+	}
+}
+```
+
+#### PriorityQueue
+
+Queue is a child interface by the Collection interface. Queue is a FIFO data structure similar to LinkedList, but we can change the order of objects in the queue. PriorityQueue does not allow duplicate objects and the insertion order is not preserved but we can have natural sorting ordering. Null values are not allowed in a PriorityQueue. The peek() method returns the first element or null in case of an empty queue. The poll() method removes and returns the first element in the queue.
+
+The PriorityQueue guarantees the order during the first time we add elements, but once we start removing elements, order will be lost.
+
+```java
+public class PriorityQueueDemo {
+	public static void main(String[] args) {
+		Queue<Integer> q = new PriorityQueue<>();
+		System.out.println(q.peek());
+
+		for (int i =20; i<=30; i++) {
+			q.offer(i);
+		}
+		System.out.println(q);
+		System.out.println(q.poll());
+		System.out.println(q.remove());
+		System.out.println(q);
+	}
+}
+```
+
+```
+null
+[20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]
+20
+21
+[22, 23, 25, 27, 24, 29, 26, 30, 28]
+```
+
+#### Collections and Arrays
+
+The Collections class from java.util offers many useful methods for handling collections such as sort() which sorts according to natural order, or we can use a custom comparator, which in this case sorts in reverse. To use binarySearch() method, the list has to be sorted first. If we search for an element not in the collection, it will return a negative value for the insertion point of where the value can be.
+
+```java
+public class SortedList {
+	public static void main(String[] args) {
+		List<String> l = new ArrayList<>();
+		l.add("Z");
+		l.add("F");
+		l.add("N");
+		l.add("C");
+		l.add("A");
+		System.out.println("Before sort: " + l);
+		Collections.sort(l);
+		// Collections.sort(l, new MyComparator());
+		System.out.println("After sort: " + l);
+
+		int result = Collections.binarySearch(l, "N");
+		System.out.println("index of N is " + result);
+	}
+}
+```
+
+We can convert an Array to a List using Arrays.asList(). It is important to note that we cannot perform operations that changes the size of an array once we convert an array to a list, but changes we make to the array will affect the list also.
+
+```java
+public class ArraysSort {
+	public static void main(String[] args) {
+		String[] s = {"D", "O", "G", "E"};
+		System.out.println("Array:");
+		for (String string : s) {
+			System.out.println(string);
+		}
+
+		List<String> list = Arrays.asList(s);
+		s[0] = "Y";
+		System.out.println("List: " + list);
+	}
+}
+```
+
+#### Generics
+
+Generics were introduced in 1.5 to avoid typecasting issues when working with collections. We can create our own Generic classes: classes that can take different data types at run time. In this case, we define an object of generic type T.
+
+```java
+public class MyGenericClass<T> {
+	T obj;
+
+	MyGenericClass(T obj) {
+		this.obj = obj;
+	}
+
+	public void displayObjectDetails() {
+		System.out.println("The type of object is " + obj.getClass().getName());
+	}
+
+	public T getObject() {
+		return obj;
+	}
+}
+
+public class Test {
+	public static void main(String[] args) {
+		MyGenericClass<String> s = new MyGenericClass<>("Doge");
+		s.displayObjectDetails();
+		System.out.println(s.getObject());
+
+		MyGenericClass<Integer> i = new MyGenericClass<>(123);
+		i.displayObjectDetails();
+		System.out.println(i.getObject());
+
+		MyGenericClass<Double> d = new MyGenericClass<>(123.2);
+		d.displayObjectDetails();
+		System.out.println(d.getObject());
+	}
+}
+```
+
+```
+The type of object is java.lang.String
+Doge
+The type of object is java.lang.Integer
+123
+The type of object is java.lang.Double
+123.2
+```
+
+We can bound the type parameter for a particular range using the extends keyword. In this case, we specify that the generic type should extend the Thread class and implement the Comparable interface.
+
+```java
+public class AnyRunnable<T extends Thread&Comparable> {
+
+}
+
+public class MyClass extends Thread implements Comparable {
+
+}
+
+public class AnyRunnableTest {
+	public static void main(String[] args) {
+		AnyRunnable<MyClass> t = new AnyRunnable<MyClass>();
+	}
+}
+```
+
+We can also define generic type parameters at the method level.
+
+```java
+public class MethodLevelGenerics {
+	public <T> void method1(T t) {
+
+	}
+
+	public <T extends Runnable> void method2(T t) {
+
+	}
+
+	public <T extends Runnable&Comparable<String>> void method3(T t) {
+
+	}
+}
+```
+
+Generics are compile time generics and not run time generics due to the concept Type Erasure. This means that the compiler will use the type specified on a generic instance to make sure that the right type of data is being added to that particular class. Once done, the compiler will remove the type once it ensures the right type has been added. This is done for backward compatibility.
+
+## Enums
+
+We can use enums to represent a group of named constants. Internally, enums are represented by classes and implicitly public static final. Every enum extends the Enum abstract class from java.lang. There are several methods in the Enum class such as values()
+
+```java
+public enum PaymentType {
+	DEBITCARD, CREDITCARD, CASH;
+}
+
+public class Test {
+	public static void main(String[] args) {
+		PaymentType pt = PaymentType.CREDITCARD;
+		System.out.println(pt);
+
+		PaymentType[] paymentTypes = PaymentType.values();
+		for (PaymentType paymentType : paymentTypes) {
+			System.out.println(paymentType);
+			System.out.println(paymentType.ordinal());
+		}
+	}
+}
+```
+
+We can also define fields and constructors in enums.
+
+```java
+public enum PaymentType {
+	DEBITCARD(5), CREDITCARD(0), CASH(10);
+
+	int fee;
+
+	PaymentType(int fee) {
+		this.fee = fee;
+	}
+
+	public int getFee() {
+		return this.fee;
 	}
 }
 ```
