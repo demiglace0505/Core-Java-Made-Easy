@@ -47,6 +47,20 @@
   - [Enums](#enums)
   - [Concurrent Collections](#concurrent-collections)
       - [Blocking Queue](#blocking-queue)
+  - [Java 8](#java-8)
+      - [Lambda Expression](#lambda-expression)
+      - [Functional Interface](#functional-interface)
+      - [Default Methods in Interface](#default-methods-in-interface)
+      - [Predicates](#predicates)
+      - [Functions](#functions)
+      - [Double Colon Operator](#double-colon-operator)
+      - [Streams](#streams)
+  - [JVM Architecture](#jvm-architecture)
+      - [Class Loader](#class-loader)
+      - [Class Loading Sub System](#class-loading-sub-system)
+      - [Memory Areas](#memory-areas)
+  - [Internationalization](#internationalization)
+  - [Annotations](#annotations)
 
 ## Introduction to Java
 
@@ -2064,3 +2078,463 @@ public class BlockingQueueTest {
 	}
 }
 ```
+
+## Java 8
+
+Java 8 introduces functional programming with lambda expressions. It also introduces functional interfaces to express and create lambda expressions. Other new features are Default methods, Predicates, Functions, and Stream API.
+
+#### Lambda Expression
+
+Lambda expressions introduces functional programming to Java. It is an anonymous function which does not have a name, return type or access modifiers. They are also know as anonymous functions or closures. The advantage is that it results to less code and the ability to pass lambda as parameters to methods.
+
+#### Functional Interface
+
+An interface with only and only one abstract method, it is called a functional interface. Some examples of functional interfaces are Runnable and Comparator. We can mark an interface as functional using the **@FunctionalInterface** annotation. We create a functional interface A and a class C that implements A.
+
+```java
+@FunctionalInterface
+public interface A {
+	void myMethod();
+}
+
+public class C implements A {
+	@Override
+	public void myMethod() {
+		System.out.println("Inside myMethod");
+	}
+}
+```
+
+The traditional way of calling A's myMethod() would be to instantiate a new instance of C. With lambdas, we don't need to instantiate the class C.
+
+```java
+public class Test {
+	public static void main(String[] args) {
+		A a = new C();
+		a.myMethod();
+
+		A a2 = ()-> System.out.println("Inside MyMethod");
+		a2.myMethod();
+	}
+}
+```
+
+We can express the built in Runnable interface. We create an implementation class that implements Runnable that prints 10 strings. The traditional way of running the runnable would be:
+
+```java
+public class MyRunnableImpl implements Runnable {
+	@Override
+	public void run() {
+		for (int i = 1; i <= 10 ; i++) {
+			System.out.println("Child Thread");
+		}
+	}
+}
+
+public class Test {
+	public static void main(String[] args) {
+		Runnable r = new MyRunnableImpl();
+		Thread t = new Thread(r);
+		t.start();
+
+		for (int i =1 ; i<=10; i++) {
+			System.out.println("Inside main thread");
+		}
+	}
+}
+```
+
+And with using lambdas:
+
+```java
+    Runnable r = ()-> {
+			for (int i = 1; i <= 10; i++) {
+				System.out.println("Child thread");
+			}
+		};
+		Thread t = new Thread(r);
+		t.start();
+```
+
+Lambdas also work with anonymous inner class.
+
+```java
+// traditional
+public class Test {
+	public static void main(String[] args) {
+		Thread t = new Thread(new Runnable() {
+			@Override
+			public void run() {
+				for (int i = 1; i <= 10; i++) {
+					System.out.println("Child Thread");
+				}
+			}
+		});
+
+		t.start();
+
+		for (int i =1 ; i<=10; i++) {
+			System.out.println("Inside main thread");
+		}
+	}
+}
+
+// using lambdas
+public class Test {
+	public static void main(String[] args) {
+		Thread t = new Thread(()-> {
+			for (int i = 1; i <= 10; i++) {
+				System.out.println("Child thread");
+			}
+		});
+
+		t.start();
+
+		for (int i =1 ; i<=10; i++) {
+			System.out.println("Inside main thread");
+		}
+	}
+}
+```
+
+#### Default Methods in Interface
+
+To create a default method we use the **default** keyword. Even if we did not define the method m1 inside B, the default inside interface A will still be run.
+
+```java
+public interface A {
+	default void m1() {
+		System.out.println("m1 inside A");
+	}
+}
+
+public class B implements A {
+
+}
+
+public class Test {
+	public static void main(String[] args) {
+		A a = new B();
+		a.m1();
+	}
+}
+```
+
+```
+m1 inside A
+```
+
+We can use runtime polymorphism to declare our own m1 method in B as well.
+
+```java
+public class B implements A {
+	public void m1() {
+		System.out.println("m1 inside B");
+	}
+}
+```
+
+```
+m1 inside B
+```
+
+Default methods in interfaces avoids the **Diamond Problem** in Java. This is when our class implements two interfaces with the same default methods without providing an overriden implementation.
+
+#### Predicates
+
+A Predicate is a function with a single argument and returns a boolean value. We use the **Predicate<T>** interface from java.util.function provided by Java 8. It is a functional interface that only has one abstract method **test()** that takes any type as an argument. We can use lambda expressions on predicates.
+
+```java
+public class GreaterThanTwenty {
+	public static void main(String[] args) {
+		Predicate<Integer> p = (i) -> (i > 20);
+		System.out.println(p.test(15));
+		System.out.println(p.test(25));
+	}
+}
+```
+
+Predicates can also be passed onto methods. We can also use multiple predicates together with Predicate Joins with the methods and() or() negate().
+
+```java
+public class PredicateJoins {
+	public static void main(String[] args) {
+		int[] x = { 0, 7, 10, 20, 30, 40, 50, 60, 70, 73 };
+		Predicate<Integer> p1 = (i) -> (i > 10);
+		Predicate<Integer> p2 = (i) -> (i % 2 == 0);
+
+		System.out.println("Greater than 10:");
+		method1(p1, x);
+		System.out.println("Even numbers:");
+		method1(p2, x);
+		System.out.println("Not greater than 10:");
+		method1(p1.negate(), x);
+		System.out.println("Greater than 10 AND even:");
+		method1(p1.and(p2), x);
+		System.out.println("Greater than 10 OR even:");
+		method1(p1.or(p2), x);
+	}
+
+	static void method1(Predicate<Integer> p, int[] x) {
+		for (int eachValue : x) {
+			if (p.test(eachValue)) {
+				System.out.println(eachValue);
+			}
+		}
+	}
+}
+```
+
+#### Functions
+
+Functions are similiar to Predicates, except they can return any type. It is a functional interface with only one abstract method **apply()**.
+
+```java
+public class FunctionTest {
+	public static void main(String[] args) {
+		Function<String, Integer> f = s->s.length();
+		System.out.println(f.apply("Doge"));
+		System.out.println(f.apply("the quick brown fox jumps over the lazy doge"));
+	}
+}
+```
+
+#### Double Colon Operator
+
+The `::` operator allows us to map constructors and methods to a functional itnerface's method. This is called Method Referencing. In this example, we are going to map the static method myMethod() to the functional interface Runnable's run() method.
+
+```java
+public class MethodRefDemo {
+	public static void myMethod() {
+		for (int i = 0; i <= 10; i++) {
+			System.out.println("Child Thread");
+		}
+	}
+
+	public static void main(String[] args) {
+		Runnable r = MethodRefDemo::myMethod;
+
+		Thread t = new Thread(r);
+		t.start();
+
+		for (int i = 0; i <= 10; i++) {
+			System.out.println("Parent Thread");
+		}
+	}
+}
+```
+
+We can also map an instance method to a functional interface's method. We start with creating our own interface and class. The instance method's argument should be the same type as the interface's.
+
+```java
+public interface MyInterface {
+	public void myMethod(int i);
+}
+
+
+public class MyClass {
+	public void myMethod123(int i) {
+		System.out.println(i);
+	}
+
+	public static void main(String[] args) {
+		MyInterface f = i->System.out.println(i);
+		f.myMethod(10);
+
+		// Mapping to functional interface
+		MyClass c = new MyClass();
+		MyInterface f1 = c::myMethod123;
+		f1.myMethod(20);
+	}
+}
+```
+
+```
+10
+20
+```
+
+We can also map a constructor. We start with writing a class and its constructor then writing the functional interface which returns a MyClass object.
+
+```java
+public class MyClass {
+	private String s;
+
+	MyClass(String s) {
+		this.s = s;
+		System.out.println("Inside Constructor: " + s);
+	}
+}
+
+public interface MyInterface {
+	MyClass get(String s);
+}
+```
+
+We then write the test class. This can be done both using lambdas and by constructor mapping. This will automatically map the constructor to the get method of the interface.
+
+```java
+public class Test {
+	public static void main(String[] args) {
+		MyInterface f1 = s->new MyClass(s);
+		f1.get("Using Lambdas");
+
+		MyInterface f2 = MyClass::new;
+		f2.get("Using constructor mapping");
+	}
+}
+```
+
+```
+Inside Constructor: Using Lambdas
+Inside Constructor: Using constructor mapping
+```
+
+#### Streams
+
+Using streams from java.util.stream, we can process data in a declarative manner. It makes it easy to process data inside a collection.
+
+```java
+public class FilterEvenNumbers {
+	public static void main(String[] args) {
+		List<Integer> l1 = new ArrayList<>();
+
+		for (int i = 0; i <= 10; i++) {
+			l1.add(i);
+		}
+		System.out.println(l1);
+
+		List<Integer> l2 = l1.stream().filter(i->i%2 == 0).collect(Collectors.toList());
+		System.out.println(l2);
+	}
+}
+
+public class UpperToLowerCase {
+	public static void main(String[] args) {
+		List<String> l1 = new ArrayList<>();
+		l1.add("DOGE");
+		l1.add("CATE");
+		l1.add("FISHE");
+		System.out.println(l1);
+
+		List<String> l2 = l1.stream().map(s->s.toLowerCase()).collect(Collectors.toList());
+		System.out.println(l2);
+	}
+}
+```
+
+## JVM Architecture
+
+The Class Loader Subsystem is responsible for loading the Javadoc class files into memory. Once loaded, memory areas are created such as Method Area, Heap Area, Stack Area, PC Registers, Native Method Stacks. The Execution Engine is an important component for running Java programs. The JNI is necessary for invoking programs in other languages.
+
+#### Class Loader
+
+The Class Loader follows a delegation model. When the JVM comes across a application class, it will check if the class if it is already in the method area. If it is not, it will ask the class loader system to load the class. The Application Classloader will load the class and will delegate the request to the Extension Classloader which requests the Bootstrap Classloader. The Bootstrap Classloader will check the bootstrap class paths (jre/lib/\*.jar) if not, it will delegate back to the Extension Classloader which checks in ext/\*.jar. The application Classloader finally checks the classpath and loads it. If not found, NoClassDefFoundException for ClassNotFoundException will be thrown.
+
+The **Bootstrap** or Primordial Class Loader is responsible for loading the api classes that come with the JDK installation. These classes are found in JRE/lib/rt.jar. These are ready to use libraries. It comes with every java installation and is typically returned in low level language (C/C++). The **Extension** class loader loads the classes from the JRE/lib/ext/. The **Application** class loader is responsible for loading all the application classes we write that we put in the classpath.
+
+Although we might create multiple instances of a class, a class is only loaded into memory once.
+
+#### Class Loading Sub System
+
+The Class Loading Sub System is responsible for loading, linking and initialization. **Loading** is the process of reading a .class file from the hard disk and storing its binary information or data into the JVM's method area. Once the .class file is loaded into the method area, the JVM creates an object of the class that is loaded on the Heap. This object represents the class that is in the method area of type java.lang.Class. The **Linking** phase is subdivided into Verification, Preparation and Resolution. Verification is the process of ensuring that the binary representation of a class file is not corrupt. In Preparation, the JVM allocates memory for all the static variables and assigns default values to them based on the data type. Resolution is the process of replacing symbolic names with original memory references in the method area. In **Initialization**, static variables are assigned their values and static blocks are executed.
+
+#### Memory Areas
+
+There are three Memory Areas: Method, Stack and Heap. **Method Area** is where class level binary information is stored when a class is loaded into memory. This area is shared across multiple threads and is created when the JVM starts up. Whenever a thread is created by the JVM, it also creates a stack which stores method calls and local variables in the **Stack Area**. Once the thread finishes, the runtime stack will be destroyed by the JVM. All the objects created in the application is stored in the **Heap Area**, which all threads can access. The **PC Register Area** stands for program counter and stores the address of the current executing isntruction. Every thread will have its own PC register, and once the instruction execution completes, the PC register will be incremented to the address of the next instruction to be xecuted. The **Native Method** Stack Area is used to store any calls to other language methods such as C/C++. Each thread is allocated its own Native Method stack area by the JVM.
+
+## Internationalization
+
+Internationalization or I18N is the process of supporting multiple languages and locales. Locale, NumberFormat and DateFormat classes can be used for internationalization.
+
+```java
+public class LocaleTest {
+	public static void main(String[] args) {
+		Locale l = Locale.getDefault();
+		System.out.println(l.getDisplayCountry() + l.getDisplayLanguage());
+
+		Locale.setDefault(Locale.UK);
+		System.out.println(Locale.getDefault().getDisplayCountry());
+
+		String[] isoCountries = Locale.getISOCountries();
+		for (String country : isoCountries) {
+			System.out.println(country);
+		}
+
+		String[] isoLanguages = Locale.getISOLanguages();
+		for (String language : isoLanguages) {
+			System.out.println(language);
+		}
+	}
+}
+```
+
+The NumberFormat provides methods for handling number locales.
+
+```java
+public class NumberFormatTest {
+	public static void main(String[] args) {
+		Double d = 12312.12312;
+		NumberFormat nf = NumberFormat.getInstance();
+		nf.setMinimumFractionDigits(4);
+		System.out.println(nf.format(d));
+	}
+}
+```
+
+```
+12,312.1231
+```
+
+DateFormat can also be used with locales.
+
+```java
+public class DateFormatTest {
+	public static void main(String[] args) {
+		Date d = new Date();
+		DateFormat usDF = DateFormat.getDateInstance(0, Locale.US);
+		DateFormat ukDF = DateFormat.getDateInstance(0, Locale.UK);
+
+		System.out.println("Date in US: " + usDF.format(d));
+		System.out.println("Date in UK: " + ukDF.format(d));
+
+		DateFormat timeInstance = DateFormat.getTimeInstance(0);
+		System.out.println(timeInstance.format(d));
+
+		DateFormat dateTimeInstance = DateFormat.getDateTimeInstance(0, 0);
+		System.out.println(dateTimeInstance.format(d));
+	}
+}
+```
+
+```
+Date in US: Friday, February 18, 2022
+Date in UK: Friday, 18 February 2022
+9:28:16 AM Singapore Standard Time
+Friday, February 18, 2022 at 9:28:16 AM Singapore Standard Time
+```
+
+We can also use the SimpleDateFormat class, a child of the DateFormat which allows us to convert date to any format and parse a string representation of a date.
+
+```java
+public class SimpleDateFormatTest {
+	public static void main(String[] args) throws ParseException {
+		SimpleDateFormat sdf = new SimpleDateFormat("dd/M/yyyy hh::mm:ss");
+		String date = sdf.format(new Date());
+		System.out.println(date);
+
+		String dateAsString = "05-05-2022";
+		SimpleDateFormat sdf2 = new SimpleDateFormat("dd-M-yyyy");
+		Date date2 = sdf2.parse(dateAsString);
+
+		System.out.println(date2);
+	}
+}
+```
+
+```
+18/2/2022 09::33:40
+Thu May 05 00:00:00 SGT 2022
+```
+
+## Annotations
