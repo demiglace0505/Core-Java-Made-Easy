@@ -60,7 +60,22 @@
       - [Class Loading Sub System](#class-loading-sub-system)
       - [Memory Areas](#memory-areas)
   - [Internationalization](#internationalization)
-  - [Annotations](#annotations)
+  - [Annotations and Reflection API](#annotations-and-reflection-api)
+  - [Different Ways of Creating Objects](#different-ways-of-creating-objects)
+  - [Java 9](#java-9)
+      - [Private Methods in Interfaces](#private-methods-in-interfaces)
+      - [Improved Try-Resource blocks](#improved-try-resource-blocks)
+      - [Immutable Collections](#immutable-collections)
+      - [Streaming API](#streaming-api)
+      - [Modules](#modules)
+  - [Interview Questions](#interview-questions)
+      - [Constructors](#constructors)
+      - [Overloading vs Overriding](#overloading-vs-overriding)
+      - [Final, Finally and Finalize](#final-finally-and-finalize)
+      - [Generics and Type Erasure](#generics-and-type-erasure)
+      - [== vs equals()](#-vs-equals)
+      - [Class Loaders](#class-loaders)
+      - [serialVersionUID](#serialversionuid)
 
 ## Introduction to Java
 
@@ -2537,4 +2552,285 @@ public class SimpleDateFormatTest {
 Thu May 05 00:00:00 SGT 2022
 ```
 
-## Annotations
+## Annotations and Reflection API
+
+Annotations can be used at Compile Time, Build Time, or Runtime. We can create our own custom annotations. The **@Target** annotation tells where an annotation should be applied, in this case, the annotation is to be applied at a METHOD level. **@Retention** tells how long the annotation should be applied or retained, SOURCE annotations can only be used during compilation, while RUNTIME will be available at runtime.
+
+```java
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.METHOD)
+public @interface MyAnnotation {
+
+}
+
+
+```
+
+Reflection is an API where we can inspect and modify the behavior of a class dynamically at runtime. Using reflection we can create an object dynamically, invoke methods and change private field values directly without using setter methods. Using the Constructor.getConstructors() method, we can get the constructors of our class. We can also use the invoke() method to access and invoke a method of the class.
+
+```java
+public class Calculator {
+	private double num1;
+	private double num2;
+
+	public Calculator() {
+		System.out.println("Default Constructor");
+	}
+
+	public Calculator(double num1, double num2) {
+		this.num1 = num1;
+		this.num2 = num2;
+	}
+	public double getNum1() {
+		return num1;
+	}
+	public void setNum1(double num1) {
+		this.num1 = num1;
+	}
+	public double getNum2() {
+		return num2;
+	}
+	public void setNum2(double num2) {
+		this.num2 = num2;
+	}
+}
+```
+
+```java
+public class Test {
+	public static void main(String[] args) {
+		Class<?> myClass;
+		try {
+			myClass = Class.forName(Calculator.class.getName());
+			System.out.println(myClass.getName());
+			Constructor<?>[] constructors = myClass.getConstructors();
+			System.out.println(Arrays.toString(constructors));
+			Constructor<?> constructor = myClass.getConstructor(double.class, double.class);
+			Object myObj = constructor.newInstance(5,10);
+
+			Method setNum1 = myClass.getMethod("setNum1", double.class);
+			setNum1.invoke(myObj, 6);
+
+			Method setNum2 = myClass.getMethod("setNum2", double.class);
+			setNum2.invoke(myObj, 8);
+
+			Method method = myClass.getMethod("getNum1", null);
+			System.out.println(method.invoke(myObj, null));
+
+			Method method2 = myClass.getMethod("getNum2", null);
+			System.out.println(method2.invoke(myObj, null));
+```
+
+```
+reflections.Calculator
+[public reflections.Calculator(), public reflections.Calculator(double,double)]
+6.0
+8.0
+```
+
+We started by first loading the class into memory using Class.forName(). Any class loaded into memory is represented as an object of the Class class. We then accessed the constructors using getConstructor(), created a new instance with Constructor.newInstance(). We can also pass in argument types to get the parameterized constructors. To access methods, we used the getMethod() and to invoke this method we use invoke().
+
+## Different Ways of Creating Objects
+
+```java
+public class Student {
+	public static void main(String[] args) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, CloneNotSupportedException {
+		// Using new opreator
+		Student s1 = new Student();
+
+		// Using Class.forName (deprecated)
+		// Class.forName("objectcreation.Student").newInstance();
+
+		// Using instance of class
+		Student s2 = Student.class.getConstructor().newInstance();
+
+		// Using clone
+		Student s3 = (Student) s1.clone();
+
+		// Using Factory methods
+		DateFormat dateFormat = DateFormat.getInstance();
+	}
+}
+```
+
+## Java 9
+
+#### Private Methods in Interfaces
+
+Private methods are very useful for repeated functionalities in interfaces. Java 9 also allows us to use static private methods. In this case, we use a static method in our interface. To call the sendNotification method, we need to call the interface name.
+
+```java
+public interface SendNotifications {
+	private static void establishConnection() {
+		System.out.println("Establishing connection");
+	}
+
+	static void sendNotification() {
+		establishConnection();
+		System.out.println("Sending notification");
+	}
+
+	default void sendNotifications() {
+		establishConnection();
+		System.out.println("Sending multiple notifications");
+	}
+}
+
+public class SendNotificationsImpl implements SendNotifications {
+	public static void main(String[] args) {
+		SendNotificationsImpl sn = new SendNotificationsImpl();
+		SendNotifications.sendNotification();
+		sn.sendNotifications();
+	}
+}
+```
+
+#### Improved Try-Resource blocks
+
+In the try-resource blocks introduced in Java 1.6, we cannot use the resources defined outside the block inside the try(resource) block. In Java 9, we can define the resources outside the try(resource) block.
+
+```java
+public class MyWorker implements AutoCloseable {
+	MyWorker() {
+		System.out.println("Creating the resource");
+	}
+
+	public void doSomething() {
+		System.out.println("doing something");
+	}
+
+	@Override
+	public void close() throws Exception {
+		System.out.println("Closing the resource");
+	}
+}
+
+public class Test {
+	public static void main(String[] args) {
+    //before:
+		//try (MyWorker worker = new Worker()) {
+		MyWorker worker = new MyWorker();
+		try (worker) {
+			worker.doSomething();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+}
+```
+
+#### Immutable Collections
+
+Before Java 9, we needed to pass our collections to Collections.unmodifableSet() method. Now we can use the **of()** method.
+
+```java
+List<String> list = List.of("abc", "xyz", "123");
+```
+
+#### Streaming API
+
+The new methods introduced for Streaming API in Java 9 are takeWhile() dropWhile() ofNullable(). The takeWhile()) method will take all elements from the stream that matches the condition and will stop the first time it finds an element that does not match the condition. dropWhile() will skip elements that match the condition and will take the entire remaining elements once it finds an element that does not match. ofNullable() will skip null vlaue
+
+```java
+public class StreamingAPI {
+	public static void main(String[] args) {
+		List<Integer> list = Arrays.asList(10, 40, 7, 18, 23, 30, null);
+//		System.out.println(list.stream().filter(x->x%5==0).collect(Collectors.toList()));
+		System.out.println(list.stream().takeWhile(x->x%5==0).collect(Collectors.toList()));
+		System.out.println(list.stream().dropWhile(x->x%5==0).collect(Collectors.toList()));
+		System.out.println(list.stream().flatMap(x->Stream.ofNullable(x)).collect(Collectors.toList()));
+	}
+}
+```
+
+```
+[10, 40]
+[7, 18, 23, 30, null]
+[10, 40, 7, 18, 23, 30]
+```
+
+#### Modules
+
+The Java Platform Module System JPMS introduces modules which are group of packages. We defome a module using the module-info.java file. Modules are typically reliable, avoids JAR/version hell, more secure and modular. To make a project modular, we need to create a module-info.java file. Each project is its own module. To use one module in another as a dependency we need to do an export of the package and a requires of the module. The transitive keyword will expose out the patientmanagement module to patientbilling as well.
+
+```java
+module patientbilling {
+	requires patientclinicals;
+}
+
+module patientmanagement {
+	exports com.demiglace.pr;
+}
+
+module patientclinicals {
+	requires patientmanagement;
+}
+
+public class PatientRegistration {
+	public void registerPatient() {
+		System.out.println("Registering Patient");
+	}
+
+	public void getPatientDetails() {
+		System.out.println("Patient Details");
+	}
+}
+
+public class PatientBilling {
+	public static void main(String[] args) {
+		PatientRegistration pr = new PatientRegistration();
+		pr.getPatientDetails();
+	}
+}
+
+public class PatientClinicals {
+	public static void main(String[] args) {
+		PatientRegistration registration = new PatientRegistration();
+		registration.getPatientDetails();
+	}
+}
+```
+
+The static keyword means that the module will only be available at runtime. A good example is a servlet api. The servlet api is required for code to compile while it is being written but not when deployed to servers. Cyclic dependencies happens when modules are dependent on each other in a cycle.
+
+Qualified exports is when we allow packages to only be available to certain modules. This is done using the `to` keyword
+
+```java
+module patientmanagement {
+	exports com.demiglace.pr to patientbilling;
+}
+```
+
+## Interview Questions
+
+#### Constructors
+
+A Constructor is a method used to initialize the properties of an object when it is created. It has the same name as its class name. It is only invoked when an instance of the object is created. The **super** constructor is used by a child class to invoke its parent's constructor.
+
+#### Overloading vs Overriding
+
+**Overloading** is where we define methods with the same names but different parameters. It is also known as compile-time polymorphism as the compiler decides which method will be invoked depending on parameters. **Overriding** also known as run-time polymorphism, happens in inheritance in parent-child relationships wherein a method defined in the parent class will be implemented again by a child class with the same signature, but a different work. We can instantiate a child to a reference type of its parent class. For example, a parent class A with child B:
+
+```java
+A a = new B();
+```
+
+#### Final, Finally and Finalize
+
+**Final** is a keyword used to mark primitive types to make them constants. If used against an object declaration, the object reference cannot be changed later on. When used on a class, that class cannot be inherited from. A final method cannot be overriden in a child class. **Finally** is a block used in exception handling along try-catch. The finally block gets executed even if there are no or there are exceptions. **Finalize** is called by JVM when garbage collection is to be called.
+
+#### Generics and Type Erasure
+
+Generics are introduced in Java 1.5 and are used to abstract out the type of data that can go in a collection. Type erasure is the process of the compiler erasing type during compile time once checks has finished. This is done for backward compatibility.
+
+#### == vs equals()
+
+== compares the memory locations of the objects. This can be called as a shallow comparison. The equals() method is found in the Object class and its default implementation uses the == operator. Strings primitives and Enums however has their equals() method already overriden to do a deep comparison.
+
+#### Class Loaders
+
+Classes are loaded into memory by class loaders. They load in a hierarchical fashion. The parent loader is the **Bootstrap Classloader** which loads all libraries in the jre/lib/ folder. The **Extension Classloader** loads all the classes and jars under ext/ including third party libraries. The **System Classloader** loads everything in the classpath. The JVM provides hooks wherein we can write custom classloaders.
+
+#### serialVersionUID
+
+This is a field often used in the context of Serialization and Deserialization. The JVM assigns a field serialVersionUID to every class that implements Serializable. The reason for this is to make sure that the class being serialized would also be the same class once it is deserialized. This value is calculated by the JVM based on the class fields. We can explicitly define private static long as the serialVersionUID ourselves.
