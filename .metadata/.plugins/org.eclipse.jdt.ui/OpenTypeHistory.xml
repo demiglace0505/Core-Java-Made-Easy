@@ -5,4 +5,7 @@
     <typeInfo handle="=Collections/C:\/Users\/ChristianCruz\/.p2\/pool\/plugins\/org.eclipse.justj.openjdk.hotspot.jre.full.win32.x86_64_16.0.2.v20210721-1149\/jre\/lib\/jrt-fs.jar`java.base=/module=/true=/=/javadoc_location=/https:\/\/docs.oracle.com\/en\/java\/javase\/16\/docs\/api\/=/&lt;java.util(Comparator.class[Comparator" modifiers="1537" timestamp="1626839500000"/>
     <typeInfo handle="=Multithreading/C:\/Users\/ChristianCruz\/.p2\/pool\/plugins\/org.eclipse.justj.openjdk.hotspot.jre.full.win32.x86_64_16.0.2.v20210721-1149\/jre\/lib\/jrt-fs.jar`java.base=/module=/true=/=/javadoc_location=/https:\/\/docs.oracle.com\/en\/java\/javase\/16\/docs\/api\/=/&lt;java.lang(Runnable.class[Runnable" modifiers="1537" timestamp="1626839500000"/>
     <typeInfo handle="=Java8/src&lt;defaultmethods{A.java[A" modifiers="513" timestamp="1645138042498"/>
+    <typeInfo handle="=Annotations/src&lt;annotations{MyParent.java[MyParent" modifiers="1" timestamp="1645152213817"/>
+    <typeInfo handle="=Java9Features/src&lt;privatemethods{SendNotifications.java[SendNotifications" modifiers="513" timestamp="1645162276331"/>
+    <typeInfo handle="=Java9Features/C:\/Users\/ChristianCruz\/.p2\/pool\/plugins\/org.eclipse.justj.openjdk.hotspot.jre.full.win32.x86_64_16.0.2.v20210721-1149\/jre\/lib\/jrt-fs.jar`java.base=/module=/true=/=/javadoc_location=/https:\/\/docs.oracle.com\/en\/java\/javase\/16\/docs\/api\/=/&lt;java.lang(AutoCloseable.class[AutoCloseable" modifiers="1537" timestamp="1626839500000"/>
 </typeInfoHistroy>

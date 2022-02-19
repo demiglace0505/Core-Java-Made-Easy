@@ -47,6 +47,8 @@
   - [Enums](#enums)
   - [Concurrent Collections](#concurrent-collections)
       - [Blocking Queue](#blocking-queue)
+  - [HTTP/2 Client](#http2-client)
+  - [Socket Programming](#socket-programming)
   - [Java 8](#java-8)
       - [Lambda Expression](#lambda-expression)
       - [Functional Interface](#functional-interface)
@@ -68,6 +70,25 @@
       - [Immutable Collections](#immutable-collections)
       - [Streaming API](#streaming-api)
       - [Modules](#modules)
+  - [Java 10](#java-10)
+      - [Var variables](#var-variables)
+      - [Collectors](#collectors)
+  - [Java 11](#java-11)
+      - [String API Updates](#string-api-updates)
+      - [Files API Updates](#files-api-updates)
+  - [Java 12](#java-12)
+      - [String API Updates](#string-api-updates-1)
+      - [CompactNumberInstance](#compactnumberinstance)
+      - [Collectors](#collectors-1)
+  - [Java 13 and Java 14](#java-13-and-java-14)
+      - [String Content Block](#string-content-block)
+      - [Switch Expression Syntax](#switch-expression-syntax)
+      - [instanceof Pattern Matching](#instanceof-pattern-matching)
+      - [Record](#record)
+  - [Java 15](#java-15)
+      - [Sealed Classes and Interface](#sealed-classes-and-interface)
+  - [Java 16](#java-16)
+      - [Stream toList()](#stream-tolist)
   - [Interview Questions](#interview-questions)
       - [Constructors](#constructors)
       - [Overloading vs Overriding](#overloading-vs-overriding)
@@ -2094,6 +2115,172 @@ public class BlockingQueueTest {
 }
 ```
 
+## HTTP/2 Client
+
+HTTPClient allows us to make HTTP calls in our Java application. Before HTTPClient we used to use HttpUrlConnection, which was slow and does not support AJAX. We start with creating the HttpClient object and a HttpRequest object using its factory methods. The client send() method will take it a body handler object from java.net.http.
+
+```java
+public class HttpClientSyncDemo {
+	public static void main(String[] args) throws URISyntaxException, IOException, InterruptedException {
+		HttpClient client = HttpClient.newHttpClient();
+		HttpRequest request = HttpRequest.newBuilder(new URI("https://fakerestapi.azurewebsites.net/api/v1/Activities"))
+				.GET().build();
+
+		request = HttpRequest.newBuilder(new URI("https://fakerestapi.azurewebsites.net/api/v1/Activities"))
+			.POST(BodyPublishers.ofString("{\r\n"
+					+ "  \"id\": 0,\r\n"
+					+ "  \"title\": \"string\",\r\n"
+					+ "  \"dueDate\": \"2022-02-19T13:22:14.066Z\",\r\n"
+					+ "  \"completed\": true\r\n"
+					+ "}")).header("Content-type", "application/json").build();
+
+
+		HttpResponse<String> response = client.send(request, BodyHandlers.ofString());
+		System.out.println("status:" + response.statusCode());
+		System.out.println(response.body());
+		HttpHeaders headers = response.headers();
+		System.out.println(headers.map());
+	}
+}
+```
+
+```
+status:200
+{"id":0,"title":"string","dueDate":"2022-02-19T13:22:14.066Z","completed":true}
+{api-supported-versions=[1.0], content-type=[application/json; charset=utf-8; v=1.0], date=[Sat, 19 Feb 2022 13:28:28 GMT], server=[Kestrel], transfer-encoding=[chunked]}
+```
+
+We can also handle async requests using **sendAsync()** method of the client.
+
+```java
+		CompletableFuture<HttpResponse<String>> response = client.sendAsync(request, BodyHandlers.ofString());
+		String body = response.thenApply(HttpResponse::body).get();
+		System.out.println(body);
+```
+
+```
+{"id":0,"title":"string","dueDate":"2022-02-19T13:22:14.066Z","completed":true}
+```
+
+## Socket Programming
+
+In Socket Programming the serverside socket will bind to listen to a particular port number. The client will use a socket to connect to the server using the IP address and port. Once done with sending and receiving data, both ends will close connections. The java.net package provides us with classes for socket programming.
+
+We start with creating the ServerSocket object wherein we pass port 8080. We then start listening for the client connections using the accept() method. The DataInputStream class from java.io can be used to read data from the client. For the client, we use the DataOutputStream class to write data.
+
+```java
+public class Server {
+	public static void main(String[] args) {
+		try {
+			ServerSocket serverSocket = new ServerSocket(8080);
+			System.out.println("Waiting for the client to connect");
+			Socket socket = serverSocket.accept();
+			System.out.println("Connection Established");
+			DataInputStream dis = new DataInputStream(socket.getInputStream());
+			String data = dis.readUTF();
+			System.out.println("Message received" + data);
+			dis.close();
+			serverSocket.close();
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+}
+
+public class Client {
+	public static void main(String[] args) {
+		try {
+			Socket socket = new Socket("localhost", 8080);
+			DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
+			dos.writeUTF("Serialize yourself");
+			dos.close();
+			socket.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+}
+```
+
+```
+Waiting for the client to connect
+Connection Established
+Message receivedSerialize yourself
+```
+
+A more advanced example is a chat server and client.
+
+```java
+public class ChatServer {
+	public static void main(String[] args) {
+		try {
+			ServerSocket serverSocket = new ServerSocket(9090);
+			Socket socket = serverSocket.accept();
+			DataInputStream in = new DataInputStream(socket.getInputStream());
+			DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+
+			BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(System.in));
+
+			String messageReceived = "";
+			String messageToSend = "";
+			while (true) {
+				messageReceived = in.readUTF();
+				System.out.println("Client says: " + messageReceived);
+				if (messageReceived != null && messageReceived.equals("exit")) {
+					break;
+				}
+				messageToSend = bufferedReader.readLine();
+				out.writeUTF(messageToSend);
+				out.flush();
+			}
+
+			bufferedReader.close();
+			out.close();
+			in.close();
+			socket.close();
+			serverSocket.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+}
+
+public class ChatClient {
+	public static void main(String[] args) {
+		try {
+			Socket socket = new Socket("localhost", 9090);
+			DataInputStream in = new DataInputStream(socket.getInputStream());
+			DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+
+			BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(System.in));
+
+			String messageReceived = "";
+			String messageToSend = "";
+			while (true) {
+				messageToSend = bufferedReader.readLine();
+				out.writeUTF(messageToSend);
+				out.flush();
+				if (messageToSend.equals("exit")) {
+					break;
+				}
+				messageReceived = in.readUTF();
+				System.out.println("Server Says: " + messageReceived);
+			}
+
+			bufferedReader.close();
+			out.close();
+			in.close();
+			socket.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+}
+```
+
 ## Java 8
 
 Java 8 introduces functional programming with lambda expressions. It also introduces functional interfaces to express and create lambda expressions. Other new features are Default methods, Predicates, Functions, and Stream API.
@@ -2798,6 +2985,332 @@ Qualified exports is when we allow packages to only be available to certain modu
 ```java
 module patientmanagement {
 	exports com.demiglace.pr to patientbilling;
+}
+```
+
+## Java 10
+
+#### Var variables
+
+Using the var keyword, the compiler will infer the type of a variable. var is useful for when we are working on huge collections and results in more readable code.
+
+```java
+public class VarDemo {
+	public static void main(String[] args) {
+		var map = new HashMap<String, List<String>>();
+
+		//for(Map.Entry<String, List<String>> entry:map.entrySet()) {
+		//
+		//}
+		for (var entry:map.entrySet()) {
+			//List<String> value = entry.getValue();
+			var value = entry.getValue();
+		}
+	}
+}
+```
+
+#### Collectors
+
+In Java 10, the Collector method **toUnmodifiableList()** was introduced. The list returned by this method will be immutable.
+
+```java
+public class CollectorsDemo {
+	public static void main(String[] args) {
+		List<Integer> list= List.of(15,20,17,30);
+		List<Integer> newList = list.stream().filter(i->i%3==0).collect(Collectors.toUnmodifiableList());
+	}
+}
+```
+
+## Java 11
+
+#### String API Updates
+
+The **isBlank()** method was introduced in Java 11 which returns true if a string has any number of blank characters in it. The **lines()** method returns a stream of strings by splitting a string with the \n character. The **strip()** method is like trim(), wherein it removes spaces, but it also works on unicode characters such as \u2000. The **repeat()** method repeats a string.
+
+```java
+public class StringUpdates {
+	public static void main(String[] args) {
+		String str = "           ";
+		System.out.println(str.isBlank());
+
+		str = "Serialize yourself. \nClose the World. \nOpen the Next.";
+		System.out.println(str);
+		System.out.println(str.lines().collect(Collectors.toList()));
+
+		char c = '\u2000';
+		str += c;
+		System.out.println(str.strip());
+
+		System.out.println("=".repeat(100));
+	}
+}
+```
+
+```
+true
+Serialize yourself.
+Close the World.
+Open the Next.
+[Serialize yourself. , Close the World. , Open the Next.]
+Serialize yourself.
+Close the World.
+Open the Next.
+====================================================================================================
+```
+
+#### Files API Updates
+
+Java 11 makes it easier to read and write to a file
+
+```java
+public class FilesUpdates {
+	public static void main(String[] args) throws IOException {
+		//writing to a file
+		Path path = Files.writeString(Files.createTempFile("test", ".txt"), "Serialize Yourself.");
+		System.out.println(path);
+
+		//reading contents
+		String str = Files.readString(path);
+		System.out.println(str);
+	}
+}
+```
+
+```
+C:\Users\CHRIST~1\AppData\Local\Temp\test17473410486075229430.txt
+Serialize Yourself.
+```
+
+## Java 12
+
+#### String API Updates
+
+The **indent()** and **transform()** String methods was introduced in Java 12. The transform method takes in a function which will be applied to the object.
+
+```java
+public class StringFeatures {
+	public static void main(String[] args) {
+		String s = "   Serialize Youself.";
+		System.out.println(s);
+		System.out.println(s.indent(5));
+		System.out.println(s.indent(-2));
+
+		String s1 = "10";
+		Integer result = s1.transform(Integer::parseInt);
+		System.out.println(result);
+	}
+}
+```
+
+```
+   Serialize Youself.
+        Serialize Youself.
+
+ Serialize Youself.
+
+10
+
+```
+
+#### CompactNumberInstance
+
+```java
+public class NumberFormatDemo {
+	public static void main(String[] args) {
+		NumberFormat format = NumberFormat.getCompactNumberInstance();
+		System.out.println(format.format(1000));
+
+		format = NumberFormat.getCompactNumberInstance(Locale.US, NumberFormat.Style.LONG);
+		System.out.println(format.format(1000));
+
+		format = NumberFormat.getCompactNumberInstance(Locale.US, NumberFormat.Style.SHORT);
+		System.out.println(format.format(1000000000));
+	}
+}
+```
+
+```
+1K
+1 thousand
+1B
+```
+
+#### Collectors
+
+The **teeing()** merges the results of two different downstreams with a merger that we provide. In this example, we are collecting numbers into the stream with the first downstream counting the number of elements in the stream and the second is filtering numbers greater than 10. The merger is a class we define
+
+```java
+public class Result {
+	private Long count;
+	List<Integer> filtered;
+
+public class TeeingDemo {
+	public static void main(String[] args) {
+		Result result = Stream.of(5,10,8,20,7)
+		.collect(Collectors.teeing(Collectors.counting(),
+				Collectors.filtering(n->Integer.parseInt(n.toString()) > 10,
+						Collectors.toList()), Result::new));
+
+		System.out.println(result);
+	}
+}
+```
+
+```
+Result [count=5, filtered=[20]]
+```
+
+## Java 13 and Java 14
+
+#### String Content Block
+
+A String Content Block allows us to write String blocks that retains formatting
+
+```java
+public class StringContentBlockDemo {
+	public static void main(String[] args) {
+		String str = """
+				<html>
+					<body>
+					</body>
+				</html>
+				""";
+
+		System.out.println(str);
+	}
+}
+```
+
+```
+<html>
+	<body>
+	</body>
+</html>
+```
+
+#### Switch Expression Syntax
+
+The Switch Expression Syntax allows us to set the result of a case into a variable. The yield keyword is used to return the execution with a value. We can also use the lambda expression syntax
+
+```java
+public class SwitchExpressionDemo {
+	public static void main(String[] args) {
+		int key = 1;
+		String result = switch (key) {
+		case 2: {
+			yield "Choice 1";
+		}
+		default:
+			yield "Invalid Choice";
+		};
+		System.out.println(result);
+
+		int choice = 1;
+		String response = switch (key) {
+		case 1 -> {
+			yield "You have 0 balance";
+		}
+		case 2 -> {
+			yield "You can get a loan";
+		}
+		case 3 -> {
+			yield "Deposit money";
+		}
+		default ->
+			throw new IllegalArgumentException("Unexpected value: " + key);
+		};
+		System.out.println(response);
+	}
+}
+```
+
+```
+Invalid Choice
+You have 0 balance
+```
+
+#### instanceof Pattern Matching
+
+Pattern Matching was introduced to the **instanceof** operator. Instead of explicitly typecasting, we can pass in an argument to the instanceof operator.
+
+```java
+public class InstanceofPatternMatchingDemo {
+	public static void main(String[] args) {
+		Object object = get();
+		if(object instanceof String str) {
+			// String str = (String) object;
+			System.out.println(str);
+		}
+	}
+
+	public static Object get() {
+		return "Pattern Matching in action";
+	}
+}
+```
+
+#### Record
+
+Record makes it easier to create data objects. Instead of writing out a Employee class and implementing getters, setters, hashCode and toString methods, we can use the **record** declaration.
+
+```java
+public class RecordDemo {
+	record Employee(String name, int sal) {}
+
+	public static void main(String[] args) {
+		Employee employee = new Employee("Doge", 123);
+		System.out.println(employee);
+		System.out.println(employee.name());
+		System.out.println(employee.sal());
+		System.out.println(employee.hashCode());
+
+		Employee e2 = new Employee("Doge", 123);
+		System.out.println(e2.hashCode());
+
+		Employee e3 = new Employee("Cate", 456);
+		System.out.println(e3.hashCode());
+	}
+}
+```
+
+```
+Employee[name=Doge, sal=123]
+Doge
+123
+66208466
+66208466
+64880697
+```
+
+## Java 15
+
+#### Sealed Classes and Interface
+
+When we use the **sealed** keyword, we need to use the **permits** clause as well which defines what classes will be permitted to inherit from the sealed class. The children classes will have to belong in the same module as the sealed class. Every permitted subclass must also explicitly extend the sealed class and their modifier should either be final, sealed or non-sealed. When we mark a subclass as **non-sealed**, it means that any class can extend that subclass.
+
+```java
+public sealed class BMWSeries permits ThreeSeries {
+
+}
+
+public final class ThreeSeries extends BMWSeries {
+
+}
+```
+
+## Java 16
+
+#### Stream toList()
+
+```java
+public class StreamtoList {
+	public static void main(String[] args) {
+		List<String> ids = Arrays.asList("123", "456", "789");
+		// List<Integer> idsAsInt = ids.stream().map(Integer::parseInt).collect(Collectors.toList());
+		List<Integer> idsAsInt = ids.stream().map(Integer::parseInt).toList();
+	}
 }
 ```
 
