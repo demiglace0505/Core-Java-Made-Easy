@@ -2,7 +2,12 @@
 
 [Core Java Made Easy](https://www.udemy.com/course/corejavamadeeasy/)
 
+# Certificate of Completion
+
+![Certificate of Completion](UC-0aa22f79-51ae-4950-8eb3-08782944e8d8.jpg)
+
 - [Core Java Made Easy](#core-java-made-easy)
+- [Certificate of Completion](#certificate-of-completion)
   - [Introduction to Java](#introduction-to-java)
       - [Object Oriented Programming](#object-oriented-programming)
       - [Static and Non Static Context](#static-and-non-static-context)

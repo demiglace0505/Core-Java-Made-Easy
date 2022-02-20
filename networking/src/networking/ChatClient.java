@@ -9,7 +9,6 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 public class ChatClient {
-
 	public static void main(String[] args) {
 		try {
 			Socket socket = new Socket("localhost", 9090);
